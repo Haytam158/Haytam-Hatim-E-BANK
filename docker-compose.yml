@@ -1,0 +1,269 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: ebank-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: ebank
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - ebank-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Eureka Discovery Server
+  discovery-server:
+    image: ebank-discovery-server
+    build:
+      context: .
+      dockerfile: Dockerfile.java
+      args:
+        JAR_FILE: discovery-server/target/discovery-server-*.jar
+        SERVICE_NAME: discovery-server
+    container_name: ebank-discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_INSTANCE_HOSTNAME=discovery-server
+    networks:
+      - ebank-network
+    depends_on:
+      - mysql
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Config Server
+  config-server:
+    image: ebank-config-server
+    build:
+      context: .
+      dockerfile: Dockerfile.java
+      args:
+        JAR_FILE: config-server/target/config-server-*.jar
+        SERVICE_NAME: config-server
+    container_name: ebank-config-server
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - ebank-network
+    depends_on:
+      - discovery-server
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Authentication Service
+  authentication-service:
+    image: ebank-authentication-service
+    build:
+      context: .
+      dockerfile: Dockerfile.java
+      args:
+        JAR_FILE: authentication-service/target/authentication-service-*.jar
+        SERVICE_NAME: authentication-service
+    container_name: ebank-authentication-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ebank_auth?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root123
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    networks:
+      - ebank-network
+    depends_on:
+      - mysql
+      - discovery-server
+      - config-server
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Clients Service
+  clients-service:
+    image: ebank-clients-service
+    build:
+      context: .
+      dockerfile: Dockerfile.java
+      args:
+        JAR_FILE: clients-service/target/clients-service-*.jar
+        SERVICE_NAME: clients-service
+    container_name: ebank-clients-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ebank_clients?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root123
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    networks:
+      - ebank-network
+    depends_on:
+      - mysql
+      - discovery-server
+      - config-server
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Bank Account Service
+  bankAccount-service:
+    image: ebank-bankaccount-service
+    build:
+      context: .
+      dockerfile: Dockerfile.java
+      args:
+        JAR_FILE: bankAccount-service/target/bankAccount-service-*.jar
+        SERVICE_NAME: bankAccount-service
+    container_name: ebank-bankaccount-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ebank_accounts?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root123
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    networks:
+      - ebank-network
+    depends_on:
+      - mysql
+      - discovery-server
+      - config-server
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Transaction Service
+  transaction-service:
+    image: ebank-transaction-service
+    build:
+      context: .
+      dockerfile: Dockerfile.java
+      args:
+        JAR_FILE: transaction-service/target/transaction-service-*.jar
+        SERVICE_NAME: transaction-service
+    container_name: ebank-transaction-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ebank_transactions?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root123
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    networks:
+      - ebank-network
+    depends_on:
+      - mysql
+      - discovery-server
+      - config-server
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Notifications Service
+  notifications-service:
+    image: ebank-notifications-service
+    build:
+      context: .
+      dockerfile: Dockerfile.java
+      args:
+        JAR_FILE: notifications-service/target/notifications-service-*.jar
+        SERVICE_NAME: notifications-service
+    container_name: ebank-notifications-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    networks:
+      - ebank-network
+    depends_on:
+      - discovery-server
+      - config-server
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    image: ebank-api-gateway
+    build:
+      context: .
+      dockerfile: Dockerfile.java
+      args:
+        JAR_FILE: api-gateway/target/api-gateway-*.jar
+        SERVICE_NAME: api-gateway
+    container_name: ebank-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    networks:
+      - ebank-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - authentication-service
+      - clients-service
+      - bankAccount-service
+      - transaction-service
+      - notifications-service
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # React Frontend
+  react-frontend:
+    image: ebank-react-frontend
+    build:
+      context: ./react
+      dockerfile: Dockerfile
+    container_name: ebank-react-frontend
+    ports:
+      - "3002:80"
+    networks:
+      - ebank-network
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  ebank-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+
