@@ -1,6 +1,6 @@
-# E-Bank - Système Bancaire en Ligne
+# E-Bank
 
-Une application bancaire complète construite avec une architecture microservices, comprenant un backend Java Spring Boot et un frontend React moderne.
+Une application bancaire construite avec une architecture microservices, comprenant un backend Java Spring Boot et un frontend React moderne.
 
 ## Table des Matières
 
