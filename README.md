@@ -339,13 +339,13 @@ docker-compose down -v
 
 ## Points d'Accès
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| Frontend | http://localhost:3002 | Interface utilisateur React |
-| API Gateway | http://localhost:8080 | Point d'entrée API |
-| Eureka Dashboard | http://localhost:8761 | Service Discovery UI |
-| Config Server | http://localhost:8888 | Configuration centralisée |
-| MySQL | localhost:3307 | Base de données (Docker) |
+| Service            | URL                   | Description                 |
+|--------------------|-----------------------|-----------------------------|
+| Frontend           | http://localhost:3002 | Interface utilisateur React |
+| API Gateway        | http://localhost:8080 | Point d'entrée API          |
+| Eureka Dashboard   | http://localhost:8761 | Service Discovery UI        |
+| Config Server      | http://localhost:8888 | Configuration centralisée   |
+| MySQL              | localhost:3307        | Base de données (Docker)    |
 
 ## API Endpoints
 
@@ -403,7 +403,7 @@ Tous les endpoints sont accessibles via l'API Gateway à `http://localhost:8080/
 |-----------|-----------------------------------|-----------------------------------|---------------|
 | POST      | `/notifications/send-credentials` | Envoyer identifiants par email    | AGENT_GUICHET |
 
-## 👥 Rôles Utilisateurs
+## Rôles Utilisateurs
 
 ### AGENT_GUICHET
 - Gestion complète des clients et comptes bancaires
@@ -419,7 +419,7 @@ Tous les endpoints sont accessibles via l'API Gateway à `http://localhost:8080/
 - Effectuer des virements
 - Changer son mot de passe
 
-## 📁 Structure du Projet
+## Structure du Projet
 
 ```
 e-bank/
